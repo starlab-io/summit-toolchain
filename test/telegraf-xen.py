@@ -1,30 +1,47 @@
 #!/usr/bin/env python3
 
-import socket
-hostname = socket.gethostname()
 import subprocess
-import time
 
 
 
-def print_influx_data(xendomain, item, value):
-  global timestamp
-  print('xen_' + item + ',domain=' + xendomain + ',host=' + hostname + ' ' + value + ' ' + timestamp)
 
-
-def get_xentop_lines():
-  # Using -i1 does not show correct CPU usage
-  # Since collecting data is slow, we must run xentop only once and collect all the needed data from one run
+class XenDom:    
   
-  p = subprocess.Popen(['xentop', '-b', '-f', '-d 1','-i12'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-  # Ignore the first iteration, as data there is not correct (e.g. CPU usage 0%)
-  # Start reading lines only after second line starting with 'NAME' (second iteration)
-  
-  while p.poll() is None:
-    line = p.stdout.readline()
-    print( line )
+    def __init__( self, name, id, status ):
+        self.name = name
+        self.status = status
 
 
+
+
+def xentop_update_globals():
+
+    p = subprocess.Popen(['xentop', '-b', '-f', '-d 1','-i2'], 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.DEVNULL)
+    
+    while p.poll() is None:
+        
+        line = p.stdout.readline().decode("utf-8")
+        
+        if line is "":
+            break
+
+        if line.strip().startswith("NAME"):
+            continue
+        
+        domain = line.split()
+       
+        print( "domain:" + domain[0] + "cpu: " + domain[3] )
+        
+
+
+domains = {
+    "crash-kern1":"",
+    "crash-kern2":"",
+    "spin-kern1":"",
+    "spin-kern2":""
+}
     
    
 #    for line in xentop:
@@ -39,6 +56,6 @@ def get_xentop_lines():
 #      print_influx_data(domain[0],'disk_wr','disk_wr=' + domain[15] + 'i')
 
 
-xentop_lines=get_xentop_lines()
+xentop_lines=xentop_update_globals()
 
 
